@@ -20,7 +20,7 @@ RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 # Definir o diretório de trabalho
-WORKDIR /app
+WORKDIR /
 
 # Copiar o arquivo requirements.txt para o contêiner
 # Se você estiver usando um requirements.txt local, copie-o para dentro do contêiner
