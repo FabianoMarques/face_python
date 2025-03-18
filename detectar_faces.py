@@ -10,6 +10,8 @@ def carregar_encodings():
     try:
         with open('encodings.pickle', 'rb') as f:
             encodings = pickle.load(f)
+        # Remover entradas de imagens que não existem mais
+        encodings = [(path, encoding) for path, encoding in encodings if os.path.exists(path)]
         return encodings
     except FileNotFoundError:
         return []  # Retorna uma lista vazia caso o arquivo não exista
@@ -17,7 +19,23 @@ def carregar_encodings():
 def salvar_encodings(imagem_path, encoding):
     """Salva os encodings das faces em um arquivo pickle."""
     encodings = carregar_encodings()  # Carrega os encodings existentes, se houver.
-    encodings.append((imagem_path, encoding))  # Adiciona o novo encoding
+
+    # Verificar se a imagem já existe nos encodings e atualizar o caminho, caso necessário
+    for i, (path, _) in enumerate(encodings):
+        if path == imagem_path:
+            encodings[i] = (imagem_path, encoding)  # Atualiza o caminho da imagem renomeada
+            break
+    else:
+        encodings.append((imagem_path, encoding))  # Adiciona o novo encoding
+    
+    # Salvar os encodings no arquivo pickle
+    with open('encodings.pickle', 'wb') as f:
+        pickle.dump(encodings, f)
+
+def remover_encoding(imagem_path):
+    """Remove o encoding de uma imagem excluída."""
+    encodings = carregar_encodings()
+    encodings = [e for e in encodings if e[0] != imagem_path]  # Remove o encoding da imagem excluída
     with open('encodings.pickle', 'wb') as f:
         pickle.dump(encodings, f)
 
@@ -54,6 +72,9 @@ def comparar_faces(imagem_temporaria_path, pasta):
 
     # Carregar os encodings já armazenados
     encodings_salvos = carregar_encodings()
+
+    # Verificar se o arquivo da imagem ainda existe
+    encodings_salvos = [(path, encoding) for path, encoding in encodings_salvos if os.path.exists(path)]
 
     if not encodings_salvos:
         # Caso não existam encodings, processar todas as imagens da pasta
@@ -95,6 +116,13 @@ def comparar_faces(imagem_temporaria_path, pasta):
         return {"imagem": melhor_match, "score": menor_distancia, "status": status}
     
     return {"mensagem": "Nenhuma correspondência encontrada."}
+
+# Função para excluir a imagem
+def excluir_imagem(imagem_path):
+    """Remove a imagem e seu encoding"""
+    if os.path.exists(imagem_path):
+        os.remove(imagem_path)  # Exclui fisicamente a imagem
+        remover_encoding(imagem_path)  # Remove o encoding da imagem do pickle
 
 if __name__ == "__main__":
     try:
